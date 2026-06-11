@@ -2,8 +2,10 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
+
 const pool = require("./src/db/db");
 const { analyzeConversation } = require("./src/services/gemini");
+const { sendPriorityAlert } = require("./src/services/alertEmail");
 
 const app = express();
 
@@ -83,15 +85,23 @@ app.post("/api/conversations", async (req, res) => {
     // AI ANALYSIS
     // ==========================
 
-    const conversationText = messages
-      .map((m) => `${m.sender}: ${m.text}`)
-      .join("\n");
-
     console.log("Running AI Analysis...");
 
     const analysis = await analyzeConversation(messages);
 
     console.log("AI Result:", analysis);
+
+    // ==========================
+    // REMOVE OLD ANALYSIS
+    // ==========================
+
+    await pool.execute(
+      `
+      DELETE FROM ai_analysis
+      WHERE conversation_id = ?
+      `,
+      [conversationId],
+    );
 
     // ==========================
     // SAVE AI ANALYSIS
@@ -122,11 +132,33 @@ app.post("/api/conversations", async (req, res) => {
 
     console.log("AI Analysis Saved");
 
+    // ==========================
+    // SEND ALERT EMAIL
+    // ==========================
+
+    if (
+      analysis.priority_level === "HIGH" ||
+      analysis.priority_level === "MEDIUM"
+    ) {
+      console.log(`Sending ${analysis.priority_level} alert email...`);
+
+      try {
+        await sendPriorityAlert({
+          conversationId,
+          analysis,
+        });
+
+        console.log("Priority email sent");
+      } catch (emailErr) {
+        console.error("Email send failed:", emailErr.message);
+      }
+    }
+
     res.json({
       success: true,
-      receivedAt: new Date().toISOString(),
       conversationId,
       analysis,
+      receivedAt: new Date().toISOString(),
     });
   } catch (err) {
     console.error(err);
@@ -138,6 +170,6 @@ app.post("/api/conversations", async (req, res) => {
   }
 });
 
-app.listen(8999, () => {
+app.listen(process.env.PORT || 8999, () => {
   console.log(`Server running on ${process.env.PORT || 8999}`);
 });
