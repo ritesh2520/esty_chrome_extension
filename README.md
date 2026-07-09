@@ -1,5 +1,5 @@
 # 🧠 Conversation Analysis Platform
-The Conversation Analysis Platform is a comprehensive solution for analyzing and understanding conversations. It utilizes AI-powered models to provide insights into conversation sentiment, intent, and priority levels. The platform is built using a microservices architecture, with each service responsible for a specific task, such as conversation analysis, email sending, and database interactions. The platform is designed to be scalable, secure, and easy to maintain.
+The platform is built using a microservices architecture, with each service responsible for a specific task, such as conversation analysis, email sending, and database interactions. The platform is designed to be scalable, secure, and easy to maintain.
 
 ## 🚀 Features
 * **Conversation Analysis**: The platform uses AI-powered models to analyze conversations and provide insights into sentiment, intent, and priority levels.
